@@ -125,6 +125,7 @@
   {
     "kinoko2026": {
       "name": "きのこカンファレンス 2026",
+      "startDate": "2026-06-28",
       "trackRows": [
         [
           { "name": "メイン", "hashtags": ["きのこ2026"] }
@@ -142,6 +143,8 @@
     },
     "tskaigi2026": {
       "name": "TSKaigi 2026",
+      "startDate": "2026-05-22",
+      "endDate": "2026-05-23",
       "trackRows": [
         [
           { "name": "Main", "hashtags": ["TSKaigi2026"] }
@@ -184,13 +187,21 @@
       </header>
 
       <div>
-        <template x-for="conf in conferenceList" :key="conf.key">
-          <button @click="selectConference(conf.key)" class="conf-row">
-            <span class="text-base font-medium" x-text="conf.name"></span>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="flex-shrink-0 c-muted">
-              <polyline points="9 18 15 12 9 6"/>
-            </svg>
-          </button>
+        <template x-for="group in conferenceGroups" :key="group.label">
+          <div x-show="group.items.length > 0" class="mb-8">
+            <p class="text-[10px] font-semibold tracking-[0.25em] uppercase c-muted mb-1" x-text="group.label"></p>
+            <template x-for="conf in group.items" :key="conf.key">
+              <button @click="selectConference(conf.key)" class="conf-row">
+                <div>
+                  <p class="text-xs c-muted mb-0.5" x-text="conf.displayDate"></p>
+                  <p class="text-base font-medium" x-text="conf.name"></p>
+                </div>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="flex-shrink-0 c-muted">
+                  <polyline points="9 18 15 12 9 6"/>
+                </svg>
+              </button>
+            </template>
+          </div>
         </template>
       </div>
 
@@ -298,8 +309,44 @@
         toggleDark() { this.darkMode = !this.darkMode; },
 
         // 一覧
-        get conferenceList() {
-          return Object.entries(this.conferences).map(([key, conf]) => ({ key, name: conf.name }));
+        get conferenceGroups() {
+          const d = new Date();
+          const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+          const formatDate = (start, end) => {
+            if (!end || start === end) return start.replace(/-/g, '/');
+            const [sy, sm, sd] = start.split('-');
+            const [, em, ed] = end.split('-');
+            return sm === em
+              ? `${sy}/${sm}/${sd}-${ed}`
+              : `${sy}/${sm}/${sd} - ${sy}/${em}/${ed}`;
+          };
+
+          const categorize = (start, end) => {
+            if (today < start) return 'upcoming';
+            if (today > (end ?? start)) return 'past';
+            return 'active';
+          };
+
+          const all = Object.entries(this.conferences).map(([key, conf]) => ({
+            key,
+            name: conf.name,
+            displayDate: formatDate(conf.startDate, conf.endDate),
+            category: categorize(conf.startDate, conf.endDate),
+            startDate: conf.startDate,
+          }));
+
+          const byCategory = (cat, asc = true) =>
+            all.filter(c => c.category === cat)
+               .sort((a, b) => asc
+                 ? a.startDate.localeCompare(b.startDate)
+                 : b.startDate.localeCompare(a.startDate));
+
+          return [
+            { label: '開催中',     items: byCategory('active') },
+            { label: '開催前',     items: byCategory('upcoming') },
+            { label: '過去イベント', items: byCategory('past', false) },
+          ];
         },
 
         selectConference(key) {
