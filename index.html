@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Conference Tweet Helper</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <!-- FOUC防止: Alpine.js より前にダーククラスを適用 -->
+  <script>
+    if (localStorage.getItem('darkMode') === 'true') document.documentElement.classList.add('dark');
+  </script>
+
+  <script>tailwind.config = { darkMode: 'class' }</script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+  <style>
+    :root {
+      --c-bg:      #F9F8F6;
+      --c-text:    #1A2530;
+      --c-terra:   #C85A32;
+      --c-terra-h: #B04F2B;
+      --c-border:  #E8E5E0;
+      --c-muted:   #7A746E;
+      --c-hover:   #F0EDE8;
+    }
+    .dark {
+      --c-bg:      #18202A;
+      --c-text:    #EDE9E3;
+      --c-terra:   #C85A32;
+      --c-terra-h: #D4694A;
+      --c-border:  #2D3A47;
+      --c-muted:   #7A9BAF;
+      --c-hover:   #253546;
+    }
+
+    body {
+      font-family: 'Noto Sans JP', system-ui, sans-serif;
+      line-height: 1.7;
+      background-color: var(--c-bg);
+      color: var(--c-text);
+      transition: background-color 200ms ease, color 200ms ease;
+    }
+
+    hr { border-color: var(--c-border); transition: border-color 200ms ease; }
+
+    .c-terra { color: var(--c-terra); }
+    .c-muted  { color: var(--c-muted); }
+
+    .btn {
+      display: block;
+      font-size: 0.875rem;
+      font-weight: 500;
+      text-align: center;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 120ms ease, color 120ms ease, border-color 120ms ease;
+    }
+
+    .btn-ghost {
+      color: var(--c-text);
+      border: 1px solid var(--c-border);
+      background: transparent;
+    }
+    .btn-ghost:hover  { background-color: var(--c-hover); }
+    .btn-ghost:active { background-color: var(--c-border); }
+
+    .btn-track-on {
+      background-color: var(--c-text);
+      color: var(--c-bg);
+      border: 1px solid var(--c-text);
+    }
+    .btn-track-on:hover { opacity: 0.85; }
+
+    .btn-terra {
+      background-color: var(--c-terra);
+      color: #F9F8F6;
+      border: none;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+    }
+    .btn-terra:hover  { background-color: var(--c-terra-h); }
+    .btn-terra:active { opacity: 0.9; }
+
+    .btn-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      flex-shrink: 0;
+      border-radius: 4px;
+      color: var(--c-muted);
+      border: 1px solid var(--c-border);
+      background: transparent;
+      cursor: pointer;
+      transition: background-color 120ms ease, border-color 200ms ease;
+    }
+    .btn-icon:hover { background-color: var(--c-hover); }
+
+    /* 一覧の各カンファレンス行 */
+    .conf-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      padding: 1rem 0;
+      text-align: left;
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid var(--c-border);
+      cursor: pointer;
+      color: var(--c-text);
+      transition: color 120ms ease;
+    }
+    .conf-row:hover { color: var(--c-terra); }
+    .conf-row:first-child { border-top: 1px solid var(--c-border); }
+  </style>
+
+  <!-- ===== カンファレンス設定 ここを編集してください ===== -->
+  <script id="conference-config" type="application/json">
+  {
+    "kinoko2026": {
+      "name": "きのこカンファレンス 2026",
+      "trackRows": [
+        [
+          { "name": "メイン", "hashtags": ["きのこ2026"] }
+        ],
+        [
+          { "name": "Track A", "hashtags": ["きのこ2026", "a"] },
+          { "name": "Track B", "hashtags": ["きのこ2026", "b"] },
+          { "name": "Track C", "hashtags": ["きのこ2026", "c"] }
+        ],
+        [
+          { "name": "きのこルームA", "hashtags": ["きのこ2026", "きのこa"] },
+          { "name": "きのこルームB", "hashtags": ["きのこ2026", "きのこb"] }
+        ]
+      ]
+    }
+  }
+  </script>
+  <!-- ===== ここまで ===== -->
+</head>
+<body x-data="app()">
+
+  <div class="max-w-md mx-auto px-6 py-12">
+
+    <!-- ========== 一覧画面 ========== -->
+    <div x-show="!selectedKey" x-cloak>
+
+      <header class="flex items-start justify-between mb-10">
+        <div>
+          <p class="text-[10px] font-semibold tracking-[0.25em] uppercase c-terra mb-2">Tweet Helper</p>
+          <h1 class="text-2xl font-semibold leading-snug">Conferences</h1>
+        </div>
+        <button @click="toggleDark()" class="btn-icon mt-1" aria-label="ダークモード切り替え">
+          <svg x-show="!darkMode" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+          </svg>
+          <svg x-show="darkMode" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="5"/>
+            <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+            <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+          </svg>
+        </button>
+      </header>
+
+      <div>
+        <template x-for="conf in conferenceList" :key="conf.key">
+          <button @click="selectConference(conf.key)" class="conf-row">
+            <span class="text-base font-medium" x-text="conf.name"></span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="flex-shrink-0 c-muted">
+              <polyline points="9 18 15 12 9 6"/>
+            </svg>
+          </button>
+        </template>
+      </div>
+
+    </div>
+
+    <!-- ========== 詳細画面 ========== -->
+    <div x-show="selectedKey" x-cloak>
+
+      <header class="flex items-start justify-between mb-10">
+        <div>
+          <button @click="goBack()" class="flex items-center gap-1 text-[10px] font-semibold tracking-[0.25em] uppercase c-terra mb-2 hover:opacity-70 transition-opacity">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="15 18 9 12 15 6"/>
+            </svg>
+            Conferences
+          </button>
+          <h1 class="text-2xl font-semibold leading-snug" x-text="currentConference?.name"></h1>
+        </div>
+        <button @click="toggleDark()" class="btn-icon mt-1" aria-label="ダークモード切り替え">
+          <svg x-show="!darkMode" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+          </svg>
+          <svg x-show="darkMode" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="5"/>
+            <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+            <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+          </svg>
+        </button>
+      </header>
+
+      <hr class="mb-10">
+
+      <!-- トラック選択 -->
+      <section class="mb-10">
+        <p class="text-[10px] font-semibold tracking-[0.25em] uppercase c-muted mb-4">Track</p>
+        <div class="flex flex-col gap-2 mb-3">
+          <template x-for="(row, ri) in trackRows" :key="ri">
+            <div class="grid gap-2" :style="`grid-template-columns: repeat(${row.length}, 1fr)`">
+              <template x-for="track in row" :key="track._idx">
+                <button
+                  @click="selectTrack(track._idx)"
+                  :class="selectedTrackIndex === track._idx ? 'btn-track-on' : 'btn-ghost'"
+                  class="btn py-2"
+                  x-text="track.name"
+                ></button>
+              </template>
+            </div>
+          </template>
+        </div>
+        <p class="text-xs font-mono c-muted" x-text="currentHashtagLabels"></p>
+      </section>
+
+      <hr class="mb-10">
+
+      <!-- ツイートする -->
+      <section class="mb-10">
+        <p class="text-[10px] font-semibold tracking-[0.25em] uppercase c-muted mb-4">Tweet</p>
+        <div class="flex flex-col gap-2">
+          <button @click="tweet('')" class="btn btn-terra w-full py-4">ツイート</button>
+          <div class="grid grid-cols-3 gap-2">
+            <button @click="tweet('[学び]')"   class="btn btn-ghost py-3">[学び]</button>
+            <button @click="tweet('[質問]')"   class="btn btn-ghost py-3">[質問]</button>
+            <button @click="tweet('[調べる]')" class="btn btn-ghost py-3">[調べる]</button>
+          </div>
+        </div>
+      </section>
+
+      <hr class="mb-10">
+
+      <!-- 検索する -->
+      <section>
+        <p class="text-[10px] font-semibold tracking-[0.25em] uppercase c-muted mb-4">Search</p>
+        <div class="grid grid-cols-2 gap-2">
+          <button @click="search('live')" class="btn btn-ghost py-4">ライブ</button>
+          <button @click="search('top')"  class="btn btn-ghost py-4">話題</button>
+        </div>
+      </section>
+
+    </div>
+
+  </div>
+
+  <style>[x-cloak] { display: none; }</style>
+
+  <script>
+    function app() {
+      const conferences = JSON.parse(document.getElementById('conference-config').textContent);
+      const savedKey = localStorage.getItem('selectedConferenceKey');
+
+      return {
+        conferences,
+        selectedKey: savedKey && conferences[savedKey] ? savedKey : null,
+        selectedTrackIndex: parseInt(localStorage.getItem('selectedTrackIndex') ?? '0'),
+        darkMode: localStorage.getItem('darkMode') === 'true',
+
+        init() {
+          this.$watch('darkMode', val => {
+            document.documentElement.classList.toggle('dark', val);
+            localStorage.setItem('darkMode', String(val));
+          });
+        },
+
+        toggleDark() { this.darkMode = !this.darkMode; },
+
+        // 一覧
+        get conferenceList() {
+          return Object.entries(this.conferences).map(([key, conf]) => ({ key, name: conf.name }));
+        },
+
+        selectConference(key) {
+          this.selectedKey = key;
+          this.selectedTrackIndex = 0;
+          localStorage.setItem('selectedConferenceKey', key);
+          localStorage.setItem('selectedTrackIndex', '0');
+        },
+
+        goBack() {
+          this.selectedKey = null;
+          localStorage.removeItem('selectedConferenceKey');
+        },
+
+        // 詳細
+        get currentConference() {
+          return this.conferences[this.selectedKey] ?? null;
+        },
+
+        get trackRows() {
+          if (!this.currentConference) return [];
+          let idx = 0;
+          return this.currentConference.trackRows.map(row =>
+            row.map(track => ({ ...track, _idx: idx++ }))
+          );
+        },
+
+        get flatTracks() {
+          return this.trackRows.flat();
+        },
+
+        get currentTrack() {
+          return this.flatTracks[this.selectedTrackIndex] ?? null;
+        },
+
+        get currentHashtagLabels() {
+          return this.currentTrack?.hashtags.map(h => '#' + h).join(' ') ?? '';
+        },
+
+        selectTrack(i) {
+          this.selectedTrackIndex = i;
+          localStorage.setItem('selectedTrackIndex', String(i));
+        },
+
+        tweet(prefix) {
+          if (!this.currentTrack) return;
+          const hashtagStr = this.currentTrack.hashtags.map(h => '#' + h).join(' ');
+          const text = [prefix, hashtagStr].filter(Boolean).join(' ');
+          window.open('https://twitter.com/intent/tweet?text=' + encodeURIComponent(text), '_blank');
+        },
+
+        search(mode) {
+          if (!this.currentTrack) return;
+          const query = this.currentTrack.hashtags.map(h => '#' + h).join(' ');
+          window.open('https://twitter.com/search?q=' + encodeURIComponent(query) + '&f=' + mode, '_blank');
+        },
+      };
+    }
+  </script>
+</body>
+</html>
