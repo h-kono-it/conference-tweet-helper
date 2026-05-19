@@ -126,6 +126,10 @@
     "kinoko2026": {
       "name": "きのこカンファレンス 2026",
       "startDate": "2026-06-28",
+      links": [
+        { "label": "公式サイト", "url": "https://kinoko-conf.dev/" },
+        { "label": "タイムテーブル", "url": "https://fortee.jp/kinoko-2026/timetable/2026-06-28" }
+      ],
       "trackRows": [
         [
           { "name": "メイン", "hashtags": ["きのこ2026"] }
@@ -145,6 +149,10 @@
       "name": "TSKaigi 2026",
       "startDate": "2026-05-22",
       "endDate": "2026-05-23",
+      "links": [
+        { "label": "公式サイト", "url": "https://2026.tskaigi.org/" },
+        { "label": "タイムテーブル", "url": "https://2026.tskaigi.org/talks" }
+      ],
       "trackRows": [
         [
           { "name": "Main", "hashtags": ["TSKaigi2026"] }
@@ -274,13 +282,31 @@
       <hr class="mb-10">
 
       <!-- 検索する -->
-      <section>
+      <section class="mb-10">
         <p class="text-[10px] font-semibold tracking-[0.25em] uppercase c-muted mb-4">Search</p>
         <div class="grid grid-cols-2 gap-2">
           <button @click="search('live')" class="btn btn-ghost py-4">ライブ</button>
           <button @click="search('top')"  class="btn btn-ghost py-4">話題</button>
         </div>
       </section>
+
+      <!-- リンク -->
+      <template x-if="currentConference?.links?.length">
+        <section>
+          <hr class="mb-10">
+          <p class="text-[10px] font-semibold tracking-[0.25em] uppercase c-muted mb-4">Links</p>
+          <div class="flex flex-col">
+            <template x-for="link in currentConference.links" :key="link.label">
+              <a :href="link.url" target="_blank" rel="noopener" class="conf-row">
+                <span class="text-sm font-medium" x-text="link.label"></span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="flex-shrink-0 c-muted">
+                  <polyline points="9 18 15 12 9 6"/>
+                </svg>
+              </a>
+            </template>
+          </div>
+        </section>
+      </template>
 
     </div>
 
