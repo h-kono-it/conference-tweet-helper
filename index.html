@@ -323,8 +323,8 @@
           <hr class="mb-10">
           <p class="text-[10px] font-semibold tracking-[0.25em] uppercase c-muted mb-4">Links</p>
           <div class="flex flex-col">
-            <template x-for="link in currentConference.links" :key="link.label">
-              <a :href="link.url" target="_blank" rel="noopener" class="conf-row">
+            <template x-for="(link, i) in currentConference.links" :key="link.label">
+              <a :href="link.url" :target="`conf-link-${i}`" rel="noopener" class="conf-row">
                 <span class="text-sm font-medium" x-text="link.label"></span>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="flex-shrink-0 c-muted">
                   <polyline points="9 18 15 12 9 6"/>
@@ -448,13 +448,13 @@
           if (!this.currentTrack) return;
           const hashtagStr = this.currentTrack.hashtags.map(h => '#' + h).join(' ');
           const text = [prefix, hashtagStr].filter(Boolean).join(' ');
-          window.open('https://twitter.com/intent/tweet?text=' + encodeURIComponent(text), '_blank');
+          window.open('https://twitter.com/intent/tweet?text=' + encodeURIComponent(text), 'conf-tweet');
         },
 
         search(mode) {
           if (!this.currentTrack) return;
           const query = this.currentTrack.hashtags.map(h => '#' + h).join(' ');
-          window.open('https://twitter.com/search?q=' + encodeURIComponent(query) + '&f=' + mode, '_blank');
+          window.open('https://twitter.com/search?q=' + encodeURIComponent(query) + '&f=' + mode, 'conf-search');
         },
       };
     }
