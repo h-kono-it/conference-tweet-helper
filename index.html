@@ -335,6 +335,13 @@
         </section>
       </template>
 
+      <!-- このアプリについてツイートする -->
+      <section>
+        <hr class="mb-10 mt-10">
+        <p class="text-[10px] font-semibold tracking-[0.25em] uppercase c-muted mb-4">Share</p>
+        <button @click="tweetAboutApp()" class="btn btn-ghost w-full py-4">このページについてツイートする</button>
+      </section>
+
     </div>
 
   </div>
@@ -455,6 +462,13 @@
           if (!this.currentTrack) return;
           const query = this.currentTrack.hashtags.map(h => '#' + h).join(' ');
           window.open('https://twitter.com/search?q=' + encodeURIComponent(query) + '&f=' + mode, 'conf-search');
+        },
+
+        tweetAboutApp() {
+          if (!this.currentTrack) return;
+          const hashtagStr = this.currentTrack.hashtags.map(h => '#' + h).join(' ');
+          const text = `カンファレンスTwitter補助アプリからの投稿です！みんなも使ってみてね！！\n\nhttps://h-kono-it.github.io/conference-tweet-helper/\n${hashtagStr}`;
+          window.open('https://twitter.com/intent/tweet?text=' + encodeURIComponent(text), 'conf-tweet-app');
         },
       };
     }
